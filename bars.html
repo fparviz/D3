@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<head>
+	<script src="https://d3js.org/d3.v4.min.js"></script>
+</head>
+
+<body>
+	<script type="text/javascript">
+
+		//Get the index value
+		var key = function (d) {
+					return d[0];
+				}
+
+		//Function to change the color of the rect
+		var colors = function(){
+			d3.selectAll("rect")
+				.on("mouseover", function(){
+					d3.select(this)
+						.attr("fill","orange");
+				})
+				.on("mouseout", function(d){
+					d3.select(this)
+						.transition()
+						.duration(250)
+						.attr("fill","rgb(0,0, "+(d[1]*10)+")")
+				});
+			}
+
+		//initializing the data array
+		var bardata= [];
+
+		//Random numbers
+		for (var i = 0; i < 25; i++) {
+		//uniq ID to our data. A touple with an Index and a random number
+			var newNumber = [i, Math.floor(Math.random() * 30+4)];
+			bardata.push(newNumber);
+		}
+
+		//console.log(bardataOne);
+		//Add to the DOM
+		var change = d3.select('body')
+					.append('p')
+					.text("Change Data");
+
+		var add = d3.select("body")
+					.append('p')
+					.text("Add Data");
+
+		var remove = d3.select("body")
+					.append('p')
+					.text("Remove Data");
+
+		//Setting the W and H of the SVG
+		var w = 800;
+		var h = 200;
+
+		var svg = d3.select('body')
+				.append("svg")
+				.attr("width", w)
+				.attr("height", h);
+
+
+		//Setting the X and Y Scales
+		var yScale = d3.scaleLinear()
+						//return the largest d[1] value
+						.domain([0,d3.max(bardata, function(d) {
+    						return d[1];
+						})])
+						.range([h,0]);
+
+		var xScale = d3.scaleBand()
+						//.domain(d3.range(function(d, i) { return i; }))
+						.domain(d3.range(bardata.length))
+						.range([0,w])
+						.padding(0.05);
+
+		//Adding Padding between the Rects
+		var padding = 1;
+
+		//Creating the RECT on the DOM
+		svg.selectAll("rect")
+			.data(bardata, key)
+			.enter()
+			.append("rect")
+			.attr("x", function(d,i){
+				return xScale(i);
+			})
+			.attr("y", function(d){return yScale(d[1]);})
+			.attr("width", xScale.bandwidth())
+			.attr("height", function(d){return h - yScale(d[1]);})
+			.attr("fill", function(d) {
+				return "rgb(0,0, "+(d[1]*10)+")";
+			})
+			.append("title")
+			   .text(function(d) {
+			         return d[1];
+			   });
+
+		colors();
+
+		//Function to Change the Data on Click
+		change.on("click", function(){
+			//svg.selectAll("rect").remove() // just removes all the rects
+
+			n = bardata.length
+			for (var i =0; i< n; i++){
+				bardata.pop()
+			}
+
+			console.log("bardata", n)
+
+			svg.selectAll("rect").remove()
+
+			for (var i = 0; i < n; i++) {
+				var newNumber = [i, Math.floor(Math.random() * 30+4)];
+				bardata.push(newNumber);
+
+				svg.selectAll("rect")
+					.data(bardata, key)
+					.enter()
+					.append("rect")
+
+					// .transition()
+					// .duration(500)
+					// .delay(function(d,i){
+					// 	return i*20;
+					// })
+					.attr("x", function(d,i){
+						_x = xScale(i);
+						//console.log("x", _x)
+						return _x
+					})
+					.attr("y", function(d){return yScale(d[1]);})
+					.attr("width", xScale.bandwidth())
+					.attr("height", function(d){return h - yScale(d[1]);})
+					.attr("fill", function(d) {
+						return "rgb(0,0, "+(d[1]*10)+")";
+					})
+					 .append("title")
+					 	.text(function(d) {
+					         return d[1];
+					   });
+			}
+
+			colors();
+			//tooltip();
+			svg.selectAll("rect")
+		   		.on("click", function(){
+		   			shuffle();
+		});
+
+		});
+
+		//Add Rect Function
+		add.on("click", function(d){
+			//var largestKey = bardataOne[bardataOne.length - 1][0];
+			var largestKey = Math.max.apply(Math, bardata.map(function(i) {
+    			return i[0];
+			}));
+			//console.log(lastKey);
+			var newKey = largestKey + 1;
+			bardata.push([newKey, Math.floor(Math.random() * 30+4)]);
+
+
+			svg.selectAll("rect")
+				.data(bardata, key)
+				.enter()
+				.append("rect")
+
+				.attr("x", w)
+				.attr("y", function(d){return yScale(d[1]);})
+
+				.attr("width", xScale.bandwidth())
+				.attr("height", function(d) {
+							return h - yScale(d[1]);})
+
+				.attr("fill", function(d) {
+					return "rgb(0,0, "+(d[1]*10)+")";
+				})
+
+				.append("title")
+				  .text(function(d) {
+				       return d[1];
+				   });
+
+			colors();
+			//tooltip();
+
+			xScale.domain(d3.range(bardata.length));
+
+
+
+			svg.selectAll("rect")
+				.transition()
+				.attr("x", function(d,i){
+					return xScale(i);
+				})
+				.attr("width", xScale.bandwidth())
+				.attr("text-anchor", "middle");
+
+		});
+
+		//Remove Rect Function
+		remove.on("click", function(){
+
+			bardata.shift();
+
+			svg.selectAll("rect")
+				.data(bardata, key)
+				.exit()
+				.style("left", function(d, i){
+                    return barLeft(-1) + "px"; //<-F
+                })
+				.remove();
+
+			xScale.domain(d3.range(bardata.length));
+
+			svg.selectAll("rect")
+				.transition()
+				//.attr("x",-xScale.bandwidth())
+				.attr("x", function(d,i){
+					return xScale(i);
+				})
+				.attr("width", xScale.bandwidth());
+		});
+
+
+		//shuffle rects function
+		var shuffle  = function() {
+			svg.selectAll("rect")
+				.sort(function(a,b){return d3.descending(a[1],b[1]);}) //d3->orders the indices of the rectangles
+				.transition()
+				.attr("x", function(d,i) { //evaluating the attributes
+					return xScale(i);
+				});
+			bardata.sort(function(a,b){
+    			return b[1] - a[1];
+			});
+
+
+		}
+
+		svg.selectAll("rect")
+		   .on("click", function(){
+		   		shuffle();
+		});
+
+		 function barLeft(i) {
+    		return i * (30 + 2)
+    	}
+
+
+
+	</script>
+</body>
